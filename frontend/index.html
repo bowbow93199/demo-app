@@ -7,38 +7,124 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
+      margin: 0;
+      padding: 24px;
       background: #f4f7fb;
       color: #222;
     }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
     .card {
       background: white;
       padding: 24px;
-      border-radius: 12px;
-      max-width: 700px;
+      border-radius: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
     button {
       padding: 10px 16px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      background: #0d6efd;
+      color: white;
+      margin-right: 10px;
+      margin-bottom: 12px;
     }
+
+    button.secondary {
+      background: #198754;
+    }
+
+    button.ghost {
+      background: #6c757d;
+    }
+
     pre {
       background: #f1f1f1;
       padding: 12px;
       border-radius: 8px;
       overflow: auto;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .form-box {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+
+    .movie-result {
+      margin-top: 12px;
+    }
+
+    .movie-item {
+      background: #f8f9fa;
+      border: 1px solid #e5e5e5;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Frontend App on GKE</h1>
-    <p>This frontend calls the backend API.</p>
-    <button onclick="loadMessage()">Call Backend API</button>
-    <h3>Response</h3>
-    <pre id="output">Waiting...</pre>
+  <div class="layout">
+    <div class="card">
+      <h1>Frontend App on GKE</h1>
+      <p>This frontend calls the backend API.</p>
+      <button onclick="loadMessage()">Call Backend API</button>
+
+      <h3>Response</h3>
+      <pre id="output">Waiting...</pre>
+    </div>
+
+    <div class="card">
+      <h2>Movie Operations</h2>
+      <p class="muted">Use the buttons below to add a movie or fetch movie details from MongoDB running inside GKE.</p>
+
+      <button class="secondary" onclick="showAddMovieForm()">Add Movie</button>
+      <button class="ghost" onclick="showGetMovieForm()">Get Movie</button>
+
+      <div id="movie-form-area"></div>
+
+      <h3>Movie Result</h3>
+      <div id="movie-result" class="movie-result">
+        <pre>Waiting...</pre>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -51,6 +137,95 @@
         output.textContent = JSON.stringify(data, null, 2);
       } catch (err) {
         output.textContent = "Error calling backend: " + err.message;
+      }
+    }
+
+    function showAddMovieForm() {
+      const formArea = document.getElementById("movie-form-area");
+      formArea.innerHTML = `
+        <div class="form-box">
+          <h3>Add Movie</h3>
+          <input id="movie-name" type="text" placeholder="Movie Name" />
+          <input id="movie-hero" type="text" placeholder="Hero" />
+          <input id="movie-language" type="text" placeholder="Language" />
+          <button onclick="submitMovie()">Submit</button>
+        </div>
+      `;
+    }
+
+    function showGetMovieForm() {
+      const formArea = document.getElementById("movie-form-area");
+      formArea.innerHTML = `
+        <div class="form-box">
+          <h3>Get Movie</h3>
+          <input id="search-movie-name" type="text" placeholder="Enter Movie Name" />
+          <button onclick="getMovie()">Get</button>
+        </div>
+      `;
+    }
+
+    async function submitMovie() {
+      const resultArea = document.getElementById("movie-result");
+      const name = document.getElementById("movie-name").value.trim();
+      const hero = document.getElementById("movie-hero").value.trim();
+      const language = document.getElementById("movie-language").value.trim();
+
+      if (!name || !hero || !language) {
+        resultArea.innerHTML = `<pre>All fields are required.</pre>`;
+        return;
+      }
+
+      resultArea.innerHTML = `<pre>Submitting movie...</pre>`;
+
+      try {
+        const response = await fetch("/api/movies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ name, hero, language })
+        });
+
+        const data = await response.json();
+        resultArea.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      } catch (error) {
+        resultArea.innerHTML = `<pre>Error adding movie: ${error.message}</pre>`;
+      }
+    }
+
+    async function getMovie() {
+      const resultArea = document.getElementById("movie-result");
+      const name = document.getElementById("search-movie-name").value.trim();
+
+      if (!name) {
+        resultArea.innerHTML = `<pre>Movie name is required.</pre>`;
+        return;
+      }
+
+      resultArea.innerHTML = `<pre>Fetching movie...</pre>`;
+
+      try {
+        const response = await fetch(`/api/movies?name=${encodeURIComponent(name)}`);
+        const data = await response.json();
+
+        if (!data.movies || data.movies.length === 0) {
+          resultArea.innerHTML = `<pre>No movie found for "${name}"</pre>`;
+          return;
+        }
+
+        const cards = data.movies.map((movie) => `
+          <div class="movie-item">
+            <strong>Name:</strong> ${movie.name}<br />
+            <strong>Hero:</strong> ${movie.hero}<br />
+            <strong>Language:</strong> ${movie.language}<br />
+            <strong>Year:</strong> ${movie.year ?? "N/A"}<br />
+            <strong>IMDb Rank:</strong> ${movie.imdbRank ?? "N/A"}
+          </div>
+        `).join("");
+
+        resultArea.innerHTML = cards;
+      } catch (error) {
+        resultArea.innerHTML = `<pre>Error getting movie: ${error.message}</pre>`;
       }
     }
   </script>
