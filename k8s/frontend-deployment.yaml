@@ -1,4 +1,3 @@
-cat > k8s/frontend-deployment.yaml <<'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,4 +18,3 @@ spec:
           image: us-central1-docker.pkg.dev/gke-free-lab/demo-app-repo/frontend:latest
           ports:
             - containerPort: 8080
-EOF
