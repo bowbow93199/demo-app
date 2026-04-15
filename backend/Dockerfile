@@ -1,4 +1,3 @@
-cat > backend/Dockerfile <<'EOF'
 FROM node:20-alpine
 
 WORKDIR /app
@@ -11,4 +10,3 @@ COPY server.js ./
 EXPOSE 8080
 
 CMD ["npm", "start"]
-EOF
