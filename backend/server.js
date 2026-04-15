@@ -1,4 +1,3 @@
-cat > backend/server.js <<'EOF'
 const express = require("express");
 const cors = require("cors");
 
@@ -21,4 +20,3 @@ app.get("/api/message", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);
 });
-EOF
