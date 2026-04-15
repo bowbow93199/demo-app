@@ -1,0 +1,22 @@
+cat > k8s/frontend-deployment.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: us-central1-docker.pkg.dev/gke-free-lab/demo-app-repo/frontend:latest
+          ports:
+            - containerPort: 8080
+EOF

@@ -1,0 +1,22 @@
+cat > k8s/backend-deployment.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: us-central1-docker.pkg.dev/gke-free-lab/demo-app-repo/backend:latest
+          ports:
+            - containerPort: 8080
+EOF
